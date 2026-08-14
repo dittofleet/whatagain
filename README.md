@@ -17,7 +17,21 @@ $ whatagain rm 2437
 Removed 2437 from dittofleet/shigoto-no-mori: fix the flaky land test
 ```
 
-Run `whatagain help` for the rest of the commands.
+When one line does not say enough, hang a description off the item. It is optional everywhere, so items without one stay the single line they always were:
+
+```sh
+$ whatagain add "fix the flaky land test" -d "only fails in CI, suspect the temp dir"
+$ whatagain desc cae3 "needs a signing cert first"
+
+$ whatagain ls
+dittofleet/shigoto-no-mori
+  2437  fix the flaky land test
+        only fails in CI, suspect the temp dir
+  cae3  ship the windows build
+        needs a signing cert first
+```
+
+Drop a description again with `whatagain desc cae3 --clear`. Run `whatagain help` for the rest of the commands.
 
 ## Install
 

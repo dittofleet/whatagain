@@ -2,18 +2,22 @@ package cmd
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/dittofleet/whatagain/internal/store"
 )
 
-const addUsage = `usage: whatagain add [-p <owner/repo>] "<text>"`
+const addUsage = `usage: whatagain add [-p <owner/repo>] [-d "<description>"] "<text>"`
 
 // Add stores one item. The note is a single argument, so the shell hands
 // it over intact: unquoted text loses apostrophes, globs, and anything
-// past an & or a |.
+// past an & or a |. A description is optional detail for when one line
+// does not say enough.
 func Add(args []string) error {
-	var project string
-	rest, err := flags{values: projectFlag(&project)}.parse(args, addUsage)
+	var project, description string
+	values := projectFlag(&project)
+	maps.Copy(values, descriptionFlag(&description))
+	rest, err := flags{values: values}.parse(args, addUsage)
 	if err != nil {
 		return err
 	}
@@ -36,7 +40,7 @@ func Add(args []string) error {
 		if err != nil {
 			return err
 		}
-		item = s.AddItem(p, text)
+		item = s.AddItem(p, text, normalizeDescription(description))
 		target = p.ID
 		return nil
 	}); err != nil {
@@ -44,5 +48,6 @@ func Add(args []string) error {
 	}
 
 	fmt.Printf("Added %s to %s: %s\n", item.ID, target, item.Text)
+	printDescription(2, item.Description)
 	return nil
 }

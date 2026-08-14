@@ -19,6 +19,10 @@ func projectFlag(target *string) map[string]*string {
 	return map[string]*string{"p": target, "project": target}
 }
 
+func descriptionFlag(target *string) map[string]*string {
+	return map[string]*string{"d": target, "desc": target, "description": target}
+}
+
 func yesFlag(target *bool) map[string]*bool {
 	return map[string]*bool{"y": target, "yes": target}
 }

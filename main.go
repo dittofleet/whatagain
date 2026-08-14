@@ -18,6 +18,7 @@ const usage = `Usage: whatagain <command>
 
 Commands:
   add "<text>"             Note something down for the current project
+  desc <id> "<text>"       Add detail to an item, or --clear what it has
   rm <id>... | "<text>"    Remove items by id, or by what they say
   ls                       List the current project's items
   projects                 List projects and their item counts
@@ -30,11 +31,14 @@ Commands:
 
 Flags:
   -p, --project <repo>     Act on a project other than the current repo
+  -d, --desc <text>        (add) Optional detail to go with the note
+      --clear              (desc) Drop the item's detail
       --all                (ls) Show every project
       --json               (ls, projects) Machine-readable output
       --                   Everything after this is text, not flags
 
-Notes are one quoted argument, so the shell hands them over intact.
+Notes are one quoted argument, so the shell hands them over intact. A note is
+one line. A description can run to several, and is optional everywhere.
 
 A project is a GitHub repo, e.g. dittofleet/whatagain. The current one comes
 from the ` + "`origin`" + ` remote of the git repository or worktree you are in, so
@@ -77,6 +81,8 @@ func dispatch(args []string) error {
 	switch args[0] {
 	case "add":
 		return cmd.Add(args[1:])
+	case "desc", "describe":
+		return cmd.Describe(args[1:])
 	case "rm", "remove":
 		return cmd.Remove(args[1:])
 	case "ls", "list":

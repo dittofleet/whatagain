@@ -21,12 +21,21 @@ import (
 	"github.com/dittofleet/whatagain/internal/xdg"
 )
 
-const SchemaVersion = 1
+// SchemaVersion is what this build writes. Older files load as they are,
+// since every version so far has only added optional fields, and are
+// stamped with the current version on the next save. A newer file is
+// refused: dropping fields this build does not know about would quietly
+// delete them from a store synced between machines.
+const SchemaVersion = 2
 
 type Item struct {
-	ID      string `json:"id"`
-	Text    string `json:"text"`
-	Created string `json:"created"`
+	ID   string `json:"id"`
+	Text string `json:"text"`
+	// Description is optional detail that does not fit in a one-line note.
+	// It is omitted from the file entirely when empty, so items without one
+	// look exactly as they always have.
+	Description string `json:"description,omitempty"`
+	Created     string `json:"created"`
 }
 
 type Project struct {
@@ -66,7 +75,10 @@ func Load() (*Store, error) {
 	if err := json.Unmarshal(data, s); err != nil {
 		return nil, fmt.Errorf("failed to parse %s: %w", path, err)
 	}
-	if s.SchemaVersion != SchemaVersion {
+	switch {
+	case s.SchemaVersion > SchemaVersion:
+		return nil, fmt.Errorf("%s was written by a newer whatagain (schemaVersion %d, this build understands %d)\nUpdate with `whatagain update`", path, s.SchemaVersion, SchemaVersion)
+	case s.SchemaVersion < 1:
 		return nil, fmt.Errorf("invalid %s:\n  - schemaVersion: expected %d, got %d", path, SchemaVersion, s.SchemaVersion)
 	}
 	return s, nil
@@ -181,15 +193,16 @@ func (s *Store) FindItemByID(id string) (*Project, int) {
 // newItem builds an item with a fresh id that collides with nothing else
 // in the store. Ids stay short because they only ever need to be typed
 // once, and widen if a personal-scale store somehow saturates the space.
-func (s *Store) newItem(text string) Item {
+func (s *Store) newItem(text, description string) Item {
 	for width := 2; ; width++ {
 		for attempt := 0; attempt < 16; attempt++ {
 			id := randomID(width)
 			if p, _ := s.FindItemByID(id); p == nil {
 				return Item{
-					ID:      id,
-					Text:    text,
-					Created: time.Now().UTC().Format(time.RFC3339),
+					ID:          id,
+					Text:        text,
+					Description: description,
+					Created:     time.Now().UTC().Format(time.RFC3339),
 				}
 			}
 		}
@@ -204,11 +217,19 @@ func randomID(bytes int) string {
 }
 
 // AddItem appends text to a project and returns the stored item. It hangs
-// off the store because item ids have to be unique store-wide.
-func (s *Store) AddItem(p *Project, text string) Item {
-	item := s.newItem(text)
+// off the store because item ids have to be unique store-wide. An empty
+// description means the item has none.
+func (s *Store) AddItem(p *Project, text, description string) Item {
+	item := s.newItem(text, description)
 	p.Items = append(p.Items, item)
 	return item
+}
+
+// SetDescription replaces the description of the item at index i and
+// returns it. An empty description leaves the item with none.
+func (p *Project) SetDescription(i int, description string) Item {
+	p.Items[i].Description = description
+	return p.Items[i]
 }
 
 // RemoveItemAt deletes the item at index i and returns it.

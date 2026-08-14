@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/dittofleet/whatagain/internal/store"
 )
@@ -86,7 +87,24 @@ func printItems(projects []*store.Project, scoped bool) {
 		fmt.Println(p.ID)
 		for _, it := range p.Items {
 			fmt.Printf("  %s  %s\n", it.ID, it.Text)
+			// Detail hangs under the note, aligned with it, so an item that
+			// has none still reads as the single line it always was.
+			printDescription(4+len(it.ID), it.Description)
 		}
+	}
+}
+
+// printDescription writes each line of a description indented by width
+// spaces, and nothing at all when there is none.
+func printDescription(width int, description string) {
+	if description == "" {
+		return
+	}
+	indent := strings.Repeat(" ", width)
+	// A blank line inside a description keeps the indent, so it cannot be
+	// mistaken for the empty line that separates one project from the next.
+	for _, line := range strings.Split(description, "\n") {
+		fmt.Println(indent + line)
 	}
 }
 
