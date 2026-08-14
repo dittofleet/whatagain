@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sylophi/whatagain/internal/store"
+	"github.com/dittofleet/whatagain/internal/store"
 )
 
 func project(texts ...string) *store.Project {

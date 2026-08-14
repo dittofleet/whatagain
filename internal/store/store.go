@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sylophi/whatagain/internal/xdg"
+	"github.com/dittofleet/whatagain/internal/xdg"
 )
 
 const SchemaVersion = 1
@@ -30,7 +30,7 @@ type Item struct {
 }
 
 type Project struct {
-	// ID is a GitHub repo slug, e.g. "sylophi/shigoto-no-mori".
+	// ID is a GitHub repo slug, e.g. "dittofleet/shigoto-no-mori".
 	ID    string `json:"id"`
 	Items []Item `json:"items"`
 }
@@ -123,7 +123,7 @@ func (s *Store) Save() error {
 
 // projectIndex is the one place the id comparison lives. GitHub treats
 // owner and repo names case-insensitively, so a remote cloned as
-// Sylophi/Whatagain has to find a project registered as sylophi/whatagain.
+// Dittofleet/Whatagain has to find a project registered as dittofleet/whatagain.
 func (s *Store) projectIndex(id string) int {
 	return slices.IndexFunc(s.Projects, func(p *Project) bool {
 		return strings.EqualFold(p.ID, id)
@@ -223,7 +223,7 @@ var projectIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$`)
 // ValidateProjectID checks that id looks like a GitHub "owner/name" slug.
 func ValidateProjectID(id string) error {
 	if !projectIDPattern.MatchString(id) {
-		return fmt.Errorf("invalid project: %q is not an owner/name repo id (e.g. sylophi/whatagain)", id)
+		return fmt.Errorf("invalid project: %q is not an owner/name repo id (e.g. dittofleet/whatagain)", id)
 	}
 	return nil
 }

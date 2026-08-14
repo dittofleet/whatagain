@@ -8,15 +8,15 @@ Note something down the moment you think of it, from whatever repo or worktree y
 
 ```sh
 $ whatagain add "fix the flaky land test"
-Added 2437 to sylophi/shigoto-no-mori: fix the flaky land test
+Added 2437 to dittofleet/shigoto-no-mori: fix the flaky land test
 
 $ whatagain ls
-sylophi/shigoto-no-mori
+dittofleet/shigoto-no-mori
   2437  fix the flaky land test
   cae3  ship the windows build
 
 $ whatagain rm 2437
-Removed 2437 from sylophi/shigoto-no-mori: fix the flaky land test
+Removed 2437 from dittofleet/shigoto-no-mori: fix the flaky land test
 ```
 
 Run `whatagain help` for the rest of the commands.
@@ -24,14 +24,14 @@ Run `whatagain help` for the rest of the commands.
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/sylophi/whatagain/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dittofleet/whatagain/main/install.sh | sh
 ```
 
 Installs the latest release to `~/.local/bin/whatagain` (override with `WHATAGAIN_INSTALL_DIR`). Supported platforms: macOS (arm64, x64), Linux (arm64, x64).
 
 ## The store
 
-Everything lives in one JSON file at `~/.config/whatagain/todo.json`, created on the first write. Sync it with [lichen](https://github.com/sylophi/lichen), or anything else that syncs dotfiles, and the list follows you between machines:
+Everything lives in one JSON file at `~/.config/whatagain/todo.json`, created on the first write. Sync it with [lichen](https://github.com/dittofleet/lichen), or anything else that syncs dotfiles, and the list follows you between machines:
 
 ```sh
 lichen sync ~/.config/whatagain/todo.json

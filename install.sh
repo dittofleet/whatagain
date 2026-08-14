@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPO="sylophi/whatagain"
+REPO="dittofleet/whatagain"
 DEST="${WHATAGAIN_INSTALL_DIR:-$HOME/.local/bin}"
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')

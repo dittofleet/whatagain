@@ -6,8 +6,8 @@ import (
 	"os"
 	"slices"
 
-	"github.com/sylophi/whatagain/internal/cmd"
-	"github.com/sylophi/whatagain/internal/update"
+	"github.com/dittofleet/whatagain/internal/cmd"
+	"github.com/dittofleet/whatagain/internal/update"
 )
 
 var errUnknownCommand = errors.New("unknown command")
@@ -36,7 +36,7 @@ Flags:
 
 Notes are one quoted argument, so the shell hands them over intact.
 
-A project is a GitHub repo, e.g. sylophi/whatagain. The current one comes
+A project is a GitHub repo, e.g. dittofleet/whatagain. The current one comes
 from the ` + "`origin`" + ` remote of the git repository or worktree you are in, so
 worktrees resolve to the same project as the primary checkout. A bare ` + "`ls`" + `
 outside a registered repo lists everything.

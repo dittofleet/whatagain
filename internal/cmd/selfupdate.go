@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/sylophi/whatagain/internal/release"
+	"github.com/dittofleet/whatagain/internal/release"
 )
 
 const (

@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sylophi/whatagain/internal/store"
-	"github.com/sylophi/whatagain/internal/xdg"
+	"github.com/dittofleet/whatagain/internal/store"
+	"github.com/dittofleet/whatagain/internal/xdg"
 	"golang.org/x/term"
 )
 

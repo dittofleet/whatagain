@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/sylophi/whatagain/internal/store"
+	"github.com/dittofleet/whatagain/internal/store"
 )
 
 const removeUsage = `usage: whatagain rm [-p <owner/repo>] <id>...

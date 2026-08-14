@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/sylophi/whatagain/internal/store"
+	"github.com/dittofleet/whatagain/internal/store"
 )
 
 const addUsage = `usage: whatagain add [-p <owner/repo>] "<text>"`

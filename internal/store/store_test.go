@@ -3,20 +3,20 @@ package store
 import "testing"
 
 func TestProjectLookupIgnoresCase(t *testing.T) {
-	s := &Store{Projects: []*Project{{ID: "sylophi/whatagain"}}}
+	s := &Store{Projects: []*Project{{ID: "dittofleet/whatagain"}}}
 
-	// A remote cloned as Sylophi/Whatagain names the same GitHub repo.
-	p := s.Project("Sylophi/Whatagain")
+	// A remote cloned as Dittofleet/Whatagain names the same GitHub repo.
+	p := s.Project("Dittofleet/Whatagain")
 	if p == nil {
-		t.Fatal("Project(\"Sylophi/Whatagain\") = nil, want the registered project")
+		t.Fatal("Project(\"Dittofleet/Whatagain\") = nil, want the registered project")
 	}
-	if p.ID != "sylophi/whatagain" {
+	if p.ID != "dittofleet/whatagain" {
 		t.Errorf("p.ID = %q, want the id as registered", p.ID)
 	}
-	if _, err := s.AddProject("SYLOPHI/WHATAGAIN"); err == nil {
+	if _, err := s.AddProject("DITTOFLEET/WHATAGAIN"); err == nil {
 		t.Error("AddProject with different casing = nil error, want a duplicate error")
 	}
-	if _, err := s.RemoveProject("SYLOPHI/WHATAGAIN"); err != nil {
+	if _, err := s.RemoveProject("DITTOFLEET/WHATAGAIN"); err != nil {
 		t.Errorf("RemoveProject with different casing errored: %v", err)
 	}
 }

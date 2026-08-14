@@ -1,4 +1,4 @@
-module github.com/sylophi/whatagain
+module github.com/dittofleet/whatagain
 
 go 1.26.5
 

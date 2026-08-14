@@ -4,16 +4,16 @@ import "testing"
 
 func TestParseGitHubURL(t *testing.T) {
 	ok := map[string]string{
-		"git@github.com:sylophi/whatagain.git":          "sylophi/whatagain",
-		"git@github.com:sylophi/whatagain":              "sylophi/whatagain",
-		"https://github.com/sylophi/whatagain.git":      "sylophi/whatagain",
-		"https://github.com/sylophi/whatagain":          "sylophi/whatagain",
-		"https://github.com/sylophi/whatagain/":         "sylophi/whatagain",
-		"ssh://git@github.com/sylophi/whatagain.git":    "sylophi/whatagain",
-		"git://github.com/sylophi/whatagain.git":        "sylophi/whatagain",
-		"https://user@github.com/sylophi/shigoto.git":   "sylophi/shigoto",
-		"https://github.com/sylophi/dots.with.dots.git": "sylophi/dots.with.dots",
-		"https://GitHub.com/sylophi/whatagain.git":      "sylophi/whatagain",
+		"git@github.com:dittofleet/whatagain.git":          "dittofleet/whatagain",
+		"git@github.com:dittofleet/whatagain":              "dittofleet/whatagain",
+		"https://github.com/dittofleet/whatagain.git":      "dittofleet/whatagain",
+		"https://github.com/dittofleet/whatagain":          "dittofleet/whatagain",
+		"https://github.com/dittofleet/whatagain/":         "dittofleet/whatagain",
+		"ssh://git@github.com/dittofleet/whatagain.git":    "dittofleet/whatagain",
+		"git://github.com/dittofleet/whatagain.git":        "dittofleet/whatagain",
+		"https://user@github.com/dittofleet/shigoto.git":   "dittofleet/shigoto",
+		"https://github.com/dittofleet/dots.with.dots.git": "dittofleet/dots.with.dots",
+		"https://GitHub.com/dittofleet/whatagain.git":      "dittofleet/whatagain",
 	}
 	for url, want := range ok {
 		got, err := ParseGitHubURL(url)
@@ -27,15 +27,15 @@ func TestParseGitHubURL(t *testing.T) {
 	}
 
 	bad := []string{
-		"git@gitlab.com:sylophi/whatagain.git",
-		"https://github.com/sylophi",
-		"https://github.com/sylophi/whatagain/extra",
+		"git@gitlab.com:dittofleet/whatagain.git",
+		"https://github.com/dittofleet",
+		"https://github.com/dittofleet/whatagain/extra",
 		"https://github.com/",
 		"",
 		// Hosts that merely contain the string "github.com".
 		"https://notgithub.com/evil/repo.git",
 		"https://github.com.evil.com/evil/repo.git",
-		"git@github.example.com:sylophi/whatagain.git",
+		"git@github.example.com:dittofleet/whatagain.git",
 	}
 	for _, url := range bad {
 		if got, err := ParseGitHubURL(url); err == nil {

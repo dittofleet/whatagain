@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sylophi/whatagain/internal/store"
+	"github.com/dittofleet/whatagain/internal/store"
 )
 
 const listUsage = "usage: whatagain ls [-p <owner/repo>] [--all] [--json]"

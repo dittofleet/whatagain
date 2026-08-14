@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sylophi/whatagain/internal/repo"
-	"github.com/sylophi/whatagain/internal/store"
+	"github.com/dittofleet/whatagain/internal/repo"
+	"github.com/dittofleet/whatagain/internal/store"
 )
 
 // resolveProject picks the project a command acts on: the --project value
