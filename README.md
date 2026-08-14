@@ -1,7 +1,5 @@
 # whatagain
 
-**NOTE** this project was created for personal use. I am unable to guarantee the quality or polish that one may expect from a properly maintained project.
-
 A todo list for coding agents, scoped to repos.
 
 Note something down the moment you think of it, from whatever repo or worktree you happen to be in. `whatagain` works out which project you mean from the `origin` remote, so there is nothing to select and nothing to configure.
