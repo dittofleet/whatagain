@@ -33,7 +33,7 @@ dittofleet/shigoto-no-mori
 
 Drop a description again with `whatagain desc cae3 --clear`.
 
-Tags are words you hang on an item to find it again. Nothing registers them, and there is no list of them to keep tidy: a tag exists as long as some item carries it.
+Tags are words you hang on an item to find it again. Nothing registers them: a tag exists as long as some item carries it.
 
 ```sh
 $ whatagain add "sign the installer" -t windows,release
@@ -45,7 +45,7 @@ dittofleet/shigoto-no-mori
   7d10  sign the installer  #windows #release
 ```
 
-Filter on several tags and you get the items carrying all of them, so each one you add narrows the list. Take a word back off with `whatagain untag cae3 windows`, or drop them all with `whatagain tag cae3 --clear`.
+Filter on several tags to get the items carrying all of them. Take one back off with `whatagain untag cae3 windows`, or drop them all with `whatagain tag cae3 --clear`.
 
 Run `whatagain help` for the rest of the commands.
 
