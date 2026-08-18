@@ -9,19 +9,25 @@ import (
 	"github.com/dittofleet/whatagain/internal/store"
 )
 
-const listUsage = "usage: whatagain ls [-p <owner/repo>] [--all] [--json]"
+const listUsage = "usage: whatagain ls [-p <owner/repo>] [-t <tag>...] [--all] [--json]"
 
 // List prints items. With no flags it shows the current repo's project,
 // falling back to every project when the working directory does not
 // belong to one, which is what makes a bare `whatagain ls` useful anywhere.
 func List(args []string) error {
 	var project string
+	var tagArgs []string
 	var all, asJSON bool
 	f := flags{
 		bools:  map[string]*bool{"all": &all, "a": &all, "json": &asJSON},
 		values: projectFlag(&project),
+		lists:  tagFlag(&tagArgs),
 	}
 	rest, err := f.parse(args, listUsage)
+	if err != nil {
+		return err
+	}
+	tags, err := parseTags(tagArgs)
 	if err != nil {
 		return err
 	}
@@ -53,25 +59,68 @@ func List(args []string) error {
 		}
 	}
 
+	shown = filterByTags(shown, tags)
 	if asJSON {
 		return writeJSON(struct {
 			Projects []*store.Project `json:"projects"`
 		}{emptyToSlice(shown)})
 	}
-	printItems(shown, scoped)
+	printItems(shown, scoped, tags)
 	return nil
+}
+
+// filterByTags narrows every project to the items carrying all of tags,
+// which is what makes a filter worth having once the list is long: each
+// tag you add takes items away. The projects are copies, so the store in
+// memory keeps everything it loaded.
+func filterByTags(projects []*store.Project, tags []string) []*store.Project {
+	if len(tags) == 0 {
+		return projects
+	}
+	filtered := make([]*store.Project, 0, len(projects))
+	for _, p := range projects {
+		kept := []store.Item{}
+		for _, it := range p.Items {
+			if hasEveryTag(it, tags) {
+				kept = append(kept, it)
+			}
+		}
+		// A copy of the project rather than a new one, so a field added to
+		// it later cannot go missing from a filtered listing.
+		narrowed := *p
+		narrowed.Items = kept
+		filtered = append(filtered, &narrowed)
+	}
+	return filtered
+}
+
+func hasEveryTag(it store.Item, tags []string) bool {
+	for _, tag := range tags {
+		if !it.HasTag(tag) {
+			return false
+		}
+	}
+	return true
 }
 
 // printItems renders the listing. scoped means projects holds the single
 // project that was asked for, which is the only case where an empty
-// project is worth naming.
-func printItems(projects []*store.Project, scoped bool) {
+// project is worth naming. tags are the ones filtered on, so nothing left
+// reads as a filter that matched rather than an empty list.
+func printItems(projects []*store.Project, scoped bool, tags []string) {
 	if itemCount(projects) == 0 {
+		where := ""
 		if scoped {
-			fmt.Printf("%s has no items.\n", projects[0].ID)
-			return
+			where = " in " + projects[0].ID
 		}
-		fmt.Println("No items.")
+		switch {
+		case len(tags) > 0:
+			fmt.Printf("No items tagged %s%s.\n", formatTags(tags), where)
+		case scoped:
+			fmt.Printf("%s has no items.\n", projects[0].ID)
+		default:
+			fmt.Println("No items.")
+		}
 		return
 	}
 
@@ -86,7 +135,9 @@ func printItems(projects []*store.Project, scoped bool) {
 		first = false
 		fmt.Println(p.ID)
 		for _, it := range p.Items {
-			fmt.Printf("  %s  %s\n", it.ID, it.Text)
+			// Tags ride on the note's own line, so an item still reads as
+			// one line unless it has detail hanging under it.
+			fmt.Printf("  %s  %s%s\n", it.ID, it.Text, tagSuffix(it.Tags))
 			// Detail hangs under the note, aligned with it, so an item that
 			// has none still reads as the single line it always was.
 			printDescription(4+len(it.ID), it.Description)

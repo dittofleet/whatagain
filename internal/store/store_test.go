@@ -3,6 +3,7 @@ package store
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -65,10 +66,55 @@ func TestNewItemIDsAreUnique(t *testing.T) {
 	}
 	seen := make(map[string]bool)
 	for i := 0; i < 500; i++ {
-		item := s.AddItem(p, "note", "")
+		item := s.AddItem(p, Item{Text: "note"})
 		if seen[item.ID] {
 			t.Fatalf("duplicate id %q at item %d", item.ID, i)
 		}
 		seen[item.ID] = true
+	}
+}
+
+func TestTagsIgnoreCase(t *testing.T) {
+	p := &Project{ID: "a/b", Items: []Item{{ID: "01", Text: "note"}}}
+
+	// A tag the item already carries does not land twice, whatever case it
+	// is written in, and the first spelling is the one kept.
+	item := p.AddTags(0, []string{"CI", "ci", "flaky"})
+	if want := []string{"CI", "flaky"}; !slices.Equal(item.Tags, want) {
+		t.Errorf("tags = %v, want %v", item.Tags, want)
+	}
+	if !item.HasTag("ci") {
+		t.Error("HasTag(\"ci\") = false, want true for an item tagged CI")
+	}
+
+	// A tag the item is not carrying stops the whole removal, so a typo
+	// cannot silently take half the tags off.
+	if _, missing := p.RemoveTags(0, []string{"flaky", "windows"}); len(missing) != 1 || missing[0] != "windows" {
+		t.Errorf("missing = %v, want just the tag the item lacks", missing)
+	}
+	if len(p.Items[0].Tags) != 2 {
+		t.Errorf("a refused removal left %v, want both tags", p.Items[0].Tags)
+	}
+
+	item, _ = p.RemoveTags(0, []string{"cI", "FLAKY"})
+	if item.Tags != nil {
+		t.Errorf("tags = %v, want nil so the item marshals without them", item.Tags)
+	}
+}
+
+func TestNormalizeTag(t *testing.T) {
+	cases := map[string]string{"ci": "ci", "  #Flaky ": "Flaky", "needs/design": "needs/design"}
+	for in, want := range cases {
+		got, err := NormalizeTag(in)
+		if err != nil {
+			t.Errorf("NormalizeTag(%q) errored: %v", in, err)
+		} else if got != want {
+			t.Errorf("NormalizeTag(%q) = %q, want %q", in, got, want)
+		}
+	}
+	for _, in := range []string{"", "   ", "#", "two words", "line\nbreak"} {
+		if _, err := NormalizeTag(in); err == nil {
+			t.Errorf("NormalizeTag(%q) = nil error, want a rejected tag", in)
+		}
 	}
 }

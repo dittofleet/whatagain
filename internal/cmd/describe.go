@@ -29,31 +29,25 @@ func Describe(args []string) error {
 	}
 	id := rest[0]
 
-	var item store.Item
-	var target string
-	if err := store.Update(func(s *store.Store) error {
-		// The id is resolved before the arguments are judged, so text the
-		// shell has split apart is reported as the unquoted description it
-		// is only once we know the command was aimed at a real item.
-		p, i := s.FindItemByID(id)
-		if p == nil {
-			return fmt.Errorf("no item with id: %s", id)
-		}
+	// The id is resolved before the arguments are judged, so text the shell
+	// has split apart is reported as the unquoted description it is only
+	// once we know the command was aimed at a real item.
+	item, target, err := updateItem(id, func(p *store.Project, i int) (store.Item, error) {
 		if len(rest) > 2 {
 			// Storing only the first word would look like it worked.
-			return fmt.Errorf("desc takes one description, quoted%s\n%s", quotedSuggestion("desc "+id, rest[1:]), describeUsage)
+			return store.Item{}, fmt.Errorf("desc takes one description, quoted%s\n%s", quotedSuggestion("desc "+id, rest[1:]), describeUsage)
 		}
 
 		description := ""
 		if !clear {
 			description = normalizeDescription(rest[1])
 			if description == "" {
-				return fmt.Errorf("nothing to describe %s with\nClear it with `whatagain desc %s --clear`", id, id)
+				return store.Item{}, fmt.Errorf("nothing to describe %s with\nClear it with `whatagain desc %s --clear`", id, id)
 			}
 		}
-		item, target = p.SetDescription(i, description), p.ID
-		return nil
-	}); err != nil {
+		return p.SetDescription(i, description), nil
+	})
+	if err != nil {
 		return err
 	}
 

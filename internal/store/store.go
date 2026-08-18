@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/dittofleet/whatagain/internal/xdg"
 )
@@ -26,7 +27,7 @@ import (
 // stamped with the current version on the next save. A newer file is
 // refused: dropping fields this build does not know about would quietly
 // delete them from a store synced between machines.
-const SchemaVersion = 2
+const SchemaVersion = 3
 
 type Item struct {
 	ID   string `json:"id"`
@@ -35,7 +36,24 @@ type Item struct {
 	// It is omitted from the file entirely when empty, so items without one
 	// look exactly as they always have.
 	Description string `json:"description,omitempty"`
-	Created     string `json:"created"`
+	// Tags are words hung on the item and nothing more. Nothing registers
+	// them and no list of them exists anywhere else in the file: a tag is
+	// alive exactly as long as an item carries it. They keep the casing and
+	// the order they were added in, and compare case-insensitively like ids
+	// do, so #CI and #ci are the same word.
+	Tags    []string `json:"tags,omitempty"`
+	Created string   `json:"created"`
+}
+
+// HasTag reports whether the item carries tag.
+func (it Item) HasTag(tag string) bool {
+	return ContainsTag(it.Tags, tag)
+}
+
+// ContainsTag is the one place a tag is compared to a tag, so #CI and #ci
+// are the same word everywhere and not just on an item.
+func ContainsTag(tags []string, tag string) bool {
+	return slices.ContainsFunc(tags, func(t string) bool { return strings.EqualFold(t, tag) })
 }
 
 type Project struct {
@@ -190,20 +208,15 @@ func (s *Store) FindItemByID(id string) (*Project, int) {
 	return nil, -1
 }
 
-// newItem builds an item with a fresh id that collides with nothing else
-// in the store. Ids stay short because they only ever need to be typed
-// once, and widen if a personal-scale store somehow saturates the space.
-func (s *Store) newItem(text, description string) Item {
+// newID returns an id that collides with nothing else in the store. Ids
+// stay short because they only ever need to be typed once, and widen if a
+// personal-scale store somehow saturates the space.
+func (s *Store) newID() string {
 	for width := 2; ; width++ {
 		for attempt := 0; attempt < 16; attempt++ {
 			id := randomID(width)
 			if p, _ := s.FindItemByID(id); p == nil {
-				return Item{
-					ID:          id,
-					Text:        text,
-					Description: description,
-					Created:     time.Now().UTC().Format(time.RFC3339),
-				}
+				return id
 			}
 		}
 	}
@@ -216,19 +229,66 @@ func randomID(bytes int) string {
 	return hex.EncodeToString(b)
 }
 
-// AddItem appends text to a project and returns the stored item. It hangs
-// off the store because item ids have to be unique store-wide. An empty
-// description means the item has none.
-func (s *Store) AddItem(p *Project, text, description string) Item {
-	item := s.newItem(text, description)
+// AddItem appends an item to a project, filling in the id and timestamp
+// the store owns, and returns what was stored. It hangs off the store
+// because item ids have to be unique store-wide. Everything optional about
+// an item is a field on the one passed in, so adding another does not
+// change this signature.
+func (s *Store) AddItem(p *Project, item Item) Item {
+	tags := item.Tags
+	item.ID, item.Tags = s.newID(), nil
+	item.Created = time.Now().UTC().Format(time.RFC3339)
 	p.Items = append(p.Items, item)
-	return item
+	// Through AddTags so a new item and an existing one dedupe by the same
+	// rule rather than two.
+	return p.AddTags(len(p.Items)-1, tags)
 }
 
 // SetDescription replaces the description of the item at index i and
 // returns it. An empty description leaves the item with none.
 func (p *Project) SetDescription(i int, description string) Item {
 	p.Items[i].Description = description
+	return p.Items[i]
+}
+
+// AddTags hangs tags on the item at index i, skipping the ones it already
+// carries so a tag cannot land on an item twice.
+func (p *Project) AddTags(i int, tags []string) Item {
+	it := &p.Items[i]
+	for _, tag := range tags {
+		if !it.HasTag(tag) {
+			it.Tags = append(it.Tags, tag)
+		}
+	}
+	return *it
+}
+
+// RemoveTags takes tags back off the item at index i, and reports the ones
+// it was not carrying so the caller can refuse the whole command rather
+// than half-do it.
+func (p *Project) RemoveTags(i int, tags []string) (Item, []string) {
+	it := &p.Items[i]
+	var missing []string
+	for _, tag := range tags {
+		if !it.HasTag(tag) {
+			missing = append(missing, tag)
+		}
+	}
+	if len(missing) > 0 {
+		return *it, missing
+	}
+	it.Tags = slices.DeleteFunc(it.Tags, func(t string) bool { return ContainsTag(tags, t) })
+	if len(it.Tags) == 0 {
+		// An empty slice would still marshal as "tags": [], which an item
+		// that has none has never had in the file.
+		it.Tags = nil
+	}
+	return *it, nil
+}
+
+// ClearTags drops every tag from the item at index i.
+func (p *Project) ClearTags(i int) Item {
+	p.Items[i].Tags = nil
 	return p.Items[i]
 }
 
@@ -240,6 +300,21 @@ func (p *Project) RemoveItemAt(i int) Item {
 }
 
 var projectIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$`)
+
+// NormalizeTag tidies one tag and refuses what cannot be one. A tag is a
+// single word: the leading "#" it is displayed with is optional to type and
+// dropped here, and whitespace is an error rather than a silent split into
+// two tags.
+func NormalizeTag(tag string) (string, error) {
+	t := strings.TrimPrefix(strings.TrimSpace(tag), "#")
+	if t == "" {
+		return "", fmt.Errorf("invalid tag: %q has nothing in it", tag)
+	}
+	if strings.ContainsFunc(t, unicode.IsSpace) {
+		return "", fmt.Errorf("invalid tag: %q is more than one word", tag)
+	}
+	return t, nil
+}
 
 // ValidateProjectID checks that id looks like a GitHub "owner/name" slug.
 func ValidateProjectID(id string) error {
