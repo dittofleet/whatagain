@@ -7,17 +7,22 @@ import (
 	"github.com/dittofleet/whatagain/internal/store"
 )
 
-const addUsage = `usage: whatagain add [-p <owner/repo>] [-d "<description>"] "<text>"`
+const addUsage = `usage: whatagain add [-p <owner/repo>] [-d "<description>"] [-t <tag>...] "<text>"`
 
 // Add stores one item. The note is a single argument, so the shell hands
 // it over intact: unquoted text loses apostrophes, globs, and anything
 // past an & or a |. A description is optional detail for when one line
-// does not say enough.
+// does not say enough, and tags are optional words to find the item by.
 func Add(args []string) error {
 	var project, description string
+	var tagArgs []string
 	values := projectFlag(&project)
 	maps.Copy(values, descriptionFlag(&description))
-	rest, err := flags{values: values}.parse(args, addUsage)
+	rest, err := flags{values: values, lists: tagFlag(&tagArgs)}.parse(args, addUsage)
+	if err != nil {
+		return err
+	}
+	tags, err := parseTags(tagArgs)
 	if err != nil {
 		return err
 	}
@@ -40,14 +45,18 @@ func Add(args []string) error {
 		if err != nil {
 			return err
 		}
-		item = s.AddItem(p, text, normalizeDescription(description))
+		item = s.AddItem(p, store.Item{
+			Text:        text,
+			Description: normalizeDescription(description),
+			Tags:        tags,
+		})
 		target = p.ID
 		return nil
 	}); err != nil {
 		return err
 	}
 
-	fmt.Printf("Added %s to %s: %s\n", item.ID, target, item.Text)
+	fmt.Printf("Added %s to %s: %s%s\n", item.ID, target, item.Text, tagSuffix(item.Tags))
 	printDescription(2, item.Description)
 	return nil
 }

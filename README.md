@@ -31,7 +31,23 @@ dittofleet/shigoto-no-mori
         needs a signing cert first
 ```
 
-Drop a description again with `whatagain desc cae3 --clear`. Run `whatagain help` for the rest of the commands.
+Drop a description again with `whatagain desc cae3 --clear`.
+
+Tags are words you hang on an item to find it again. Nothing registers them: a tag exists as long as some item carries it.
+
+```sh
+$ whatagain add "sign the installer" -t windows,release
+$ whatagain tag cae3 windows
+
+$ whatagain ls -t windows
+dittofleet/shigoto-no-mori
+  cae3  ship the windows build  #windows
+  7d10  sign the installer  #windows #release
+```
+
+Filter on several tags to get the items carrying all of them. Take one back off with `whatagain untag cae3 windows`, or drop them all with `whatagain tag cae3 --clear`.
+
+Run `whatagain help` for the rest of the commands.
 
 ## Install
 
