@@ -51,6 +51,12 @@ A project is a GitHub repo, e.g. dittofleet/whatagain. The current one comes
 from the ` + "`origin`" + ` remote of the git repository or worktree you are in, so
 worktrees resolve to the same project as the primary checkout. A bare ` + "`ls`" + `
 outside a registered repo lists everything.
+
+A repo registered in terrier (https://github.com/sylophi/terrier) becomes a
+project here, so it does not have to be registered twice. Terrier is checked
+whenever the list is read or written and what it holds is taken into the store,
+which is the part that syncs, so the projects are the same on every machine.
+Nothing goes the other way, and terrier is optional.
 `
 
 func printUsage() {

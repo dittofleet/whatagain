@@ -5,6 +5,7 @@ import (
 
 	"github.com/dittofleet/whatagain/internal/repo"
 	"github.com/dittofleet/whatagain/internal/store"
+	"github.com/dittofleet/whatagain/internal/terrier"
 )
 
 const projectsUsage = `usage: whatagain projects [--json]
@@ -34,7 +35,7 @@ func projectList(args []string) error {
 		return fmt.Errorf("unknown project command: %s\n%s", rest[0], projectsUsage)
 	}
 
-	s, err := store.Load()
+	s, err := openStore()
 	if err != nil {
 		return err
 	}
@@ -90,11 +91,24 @@ func projectAdd(args []string) error {
 		return fmt.Errorf("%w\nName the project explicitly: `whatagain projects add <owner/repo>`", err)
 	}
 
-	if err := store.Update(func(s *store.Store) error {
+	var registered bool
+	if err := updateStore(func(s *store.Store) error {
+		// Terrier's repos are adopted on the way into every command, so
+		// one it has registered is a project here before this gets to look
+		// at it. Saying so beats an "already exists" error about a
+		// registration the user never made.
+		if s.Project(id) != nil && terrier.Has(id) {
+			registered = true
+			return nil
+		}
 		_, err := s.AddProject(id)
 		return err
 	}); err != nil {
 		return err
+	}
+	if registered {
+		fmt.Printf("%s is already a project: terrier has it registered.\n", id)
+		return nil
 	}
 	fmt.Printf("Added project %s\n", id)
 	return nil
@@ -113,7 +127,7 @@ func projectRemove(args []string) error {
 	// One pass is enough: Update saves nothing if this returns an error,
 	// so a typo in the second argument cannot half-apply the command.
 	removed := make([]*store.Project, 0, len(rest))
-	if err := store.Update(func(s *store.Store) error {
+	if err := updateStore(func(s *store.Store) error {
 		removed = removed[:0]
 		for _, id := range rest {
 			p := s.Project(id)
@@ -135,6 +149,11 @@ func projectRemove(args []string) error {
 
 	for _, p := range removed {
 		fmt.Printf("Removed project %s (%s)\n", p.ID, plural(len(p.Items), "item"))
+		// Otherwise the next command adopts it again and the removal looks
+		// like it did not take.
+		if terrier.Has(p.ID) {
+			fmt.Println("  Terrier still has this repo registered, so it comes back as an empty project. Unregister it there to keep it off.")
+		}
 	}
 	return nil
 }

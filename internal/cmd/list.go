@@ -38,7 +38,7 @@ func List(args []string) error {
 		return fmt.Errorf("--all and --project are mutually exclusive\n%s", listUsage)
 	}
 
-	s, err := store.Load()
+	s, err := openStore()
 	if err != nil {
 		return err
 	}

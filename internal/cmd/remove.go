@@ -28,7 +28,7 @@ func Remove(args []string) error {
 	}
 
 	var removed []removal
-	err = store.Update(func(s *store.Store) error {
+	err = updateStore(func(s *store.Store) error {
 		// Ids are unique store-wide, so removing by id needs no project
 		// context and works from any directory.
 		hits, unresolved := resolveIDs(s, rest)

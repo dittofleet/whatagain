@@ -49,6 +49,25 @@ Filter on several tags to get the items carrying all of them. Take one back off 
 
 Run `whatagain help` for the rest of the commands.
 
+## Projects, registered once
+
+A repo registered in [terrier](https://github.com/sylophi/terrier) becomes a project here, so there is no second registration to remember:
+
+```sh
+$ cd ~/src/lichen
+$ terrier add
+Registered dittofleet/lichen (~/src/lichen)
+
+$ whatagain add "document the conflict rules"
+Added 3f9a to dittofleet/lichen: document the conflict rules
+```
+
+Terrier is checked whenever the list is read or written, and a repo it holds is taken into the store rather than read past on the way. That is what keeps the project the same on every machine: terrier registers paths, so its registry belongs to the machine it was written on, while the store is the thing that syncs.
+
+Nothing goes the other way. Unregistering a repo in terrier says a path is no longer worth keeping, which is a smaller thing than deleting notes on every machine you own, so the project and its items stay. Drop it with `whatagain projects rm` once terrier no longer has it.
+
+Terrier is optional. Without it, the projects are the ones added here and nothing else is different.
+
 ## Install
 
 ```sh

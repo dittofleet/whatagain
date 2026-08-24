@@ -19,4 +19,5 @@ whatagain help
 - Removing is permanent. There is no done state, no history, and no undo, so remove an item only when the user says it is finished or asks you to drop it.
 - Remove by id, taken from `whatagain ls`, rather than by text. It is exact, and it works from any directory.
 - `add` in an unregistered repo is an error. Whether a repo belongs on the list is the user's call, so ask before running `whatagain projects add`.
+- A repo registered in [terrier](https://github.com/sylophi/terrier) becomes a project here on its own, so `add` works there with nothing to register. `terrier add` is as much the user's call as `whatagain projects add`, so ask before either.
 - `command not found`: tell the user, and do not try to install it yourself.
