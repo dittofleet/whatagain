@@ -40,7 +40,7 @@ func Add(args []string) error {
 
 	var item store.Item
 	var target string
-	if err := store.Update(func(s *store.Store) error {
+	if err := updateStore(func(s *store.Store) error {
 		p, err := resolveProject(s, project)
 		if err != nil {
 			return err

@@ -13,7 +13,7 @@ import (
 func updateItem(id string, change func(p *store.Project, i int) (store.Item, error)) (store.Item, string, error) {
 	var item store.Item
 	var target string
-	err := store.Update(func(s *store.Store) error {
+	err := updateStore(func(s *store.Store) error {
 		p, i := s.FindItemByID(id)
 		if p == nil {
 			return fmt.Errorf("no item with id: %s", id)
