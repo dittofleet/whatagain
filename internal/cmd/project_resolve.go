@@ -27,7 +27,7 @@ func resolveProject(s *store.Store, override string) (*store.Project, error) {
 	id, err := repo.Current()
 	if err != nil {
 		if errors.Is(err, repo.ErrNoProject) {
-			return nil, fmt.Errorf("%w\nPick a project with `--project <owner/repo>`", err)
+			return nil, fmt.Errorf("%w\nPick a project with `--project <owner/repo>`, or the global list with `-g`", err)
 		}
 		return nil, err
 	}
@@ -36,6 +36,15 @@ func resolveProject(s *store.Store, override string) (*store.Project, error) {
 		return nil, fmt.Errorf("%s is not a project yet\nRegister it with `whatagain projects add`", id)
 	}
 	return p, nil
+}
+
+// resolveList picks the list a command acts on: the global one when -g
+// was given, otherwise the project resolveProject settles on.
+func resolveList(s *store.Store, project string, global bool) (*store.Project, error) {
+	if global {
+		return s.Global(), nil
+	}
+	return resolveProject(s, project)
 }
 
 // currentProject returns the registered project for the working directory,

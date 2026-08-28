@@ -66,7 +66,13 @@ func TestNewItemIDsAreUnique(t *testing.T) {
 	}
 	seen := make(map[string]bool)
 	for i := 0; i < 500; i++ {
-		item := s.AddItem(p, Item{Text: "note"})
+		// Half the items land on the global list, which shares the id
+		// space with every project.
+		target := p
+		if i%2 == 0 {
+			target = s.Global()
+		}
+		item := s.AddItem(target, Item{Text: "note"})
 		if seen[item.ID] {
 			t.Fatalf("duplicate id %q at item %d", item.ID, i)
 		}
@@ -116,5 +122,62 @@ func TestNormalizeTag(t *testing.T) {
 		if _, err := NormalizeTag(in); err == nil {
 			t.Errorf("NormalizeTag(%q) = nil error, want a rejected tag", in)
 		}
+	}
+}
+
+func TestGlobalListRoundTrips(t *testing.T) {
+	s, err := loadFile(t, `{"schemaVersion":4,"items":[{"id":"01","text":"renew the passport","created":"2026-01-01T00:00:00Z"}],"projects":[]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items := s.Global().Items; len(items) != 1 || items[0].Text != "renew the passport" {
+		t.Fatalf("global items = %v, want the one from the file", items)
+	}
+	// Ids are unique store-wide, so a global item is found like any other,
+	// which is what keeps desc, tag, and rm working on it with no flag.
+	if p, i := s.FindItemByID("01"); p == nil || p.ID != "" || i != 0 {
+		t.Errorf("FindItemByID(\"01\") = %v, %d; want the global list", p, i)
+	}
+
+	// The projects are empty here, so the only "items" key the file can
+	// hold is the global list's.
+	if err := s.Save(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"items"`) {
+		t.Errorf("saved store has no top-level items array:\n%s", data)
+	}
+
+	// An emptied list leaves the file without the field, exactly as a
+	// store that never had one looks.
+	s.Global().RemoveItemAt(0)
+	if err := s.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if data, err = os.ReadFile(Path()); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), `"items"`) {
+		t.Errorf("saved store still has an items array after the last removal:\n%s", data)
+	}
+}
+
+func TestLoadWithoutGlobalList(t *testing.T) {
+	// A store from before the global list existed, whose only "items" keys
+	// are the nested ones projects have always had. Loading it must not
+	// invent a global list out of them.
+	s, err := loadFile(t, `{"schemaVersion":3,"projects":[{"id":"a/b","items":[{"id":"01","text":"note","created":"2026-01-01T00:00:00Z"}]}]}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if items := s.Global().Items; len(items) != 0 {
+		t.Errorf("global items = %v, want none", items)
+	}
+	if len(s.Projects) != 1 || s.Projects[0].ID != "a/b" || len(s.Projects[0].Items) != 1 {
+		t.Errorf("projects = %v, want a/b with its one item", s.Projects)
 	}
 }

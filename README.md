@@ -47,6 +47,19 @@ dittofleet/shigoto-no-mori
 
 Filter on several tags to get the items carrying all of them. Take one back off with `whatagain untag cae3 windows`, or drop them all with `whatagain tag cae3 --clear`.
 
+Not every note is about a repo. `-g` keeps one on the global list instead of a project:
+
+```sh
+$ whatagain add -g "renew the passport"
+Added 4b21 to the global list: renew the passport
+
+$ whatagain ls -g
+(no project)
+  4b21  renew the passport
+```
+
+Ids are unique across the whole store, so `desc`, `tag`, and `rm` reach a global item without the flag, and `ls --all` shows the list alongside the projects.
+
 Run `whatagain help` for the rest of the commands.
 
 ## Projects, registered once

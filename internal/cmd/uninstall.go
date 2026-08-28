@@ -94,5 +94,7 @@ func describeStore() string {
 	if err != nil {
 		return "your projects and items"
 	}
-	return plural(len(s.Projects), "project") + ", " + plural(itemCount(s.Projects), "item")
+	// Lists, not Projects: items on the global list are as gone as any
+	// other once the store is deleted.
+	return plural(len(s.Projects), "project") + ", " + plural(itemCount(s.Lists()), "item")
 }

@@ -33,6 +33,7 @@ Commands:
 
 Flags:
   -p, --project <repo>     Act on a project other than the current repo
+  -g, --global             (add, ls, rm) Act on the global list instead
   -d, --desc <text>        (add) Optional detail to go with the note
   -t, --tag <tag>          (add) Tag the note, (ls) show only what carries it
       --clear              (desc, tag) Drop the item's detail or its tags
@@ -51,6 +52,10 @@ A project is a GitHub repo, e.g. dittofleet/whatagain. The current one comes
 from the ` + "`origin`" + ` remote of the git repository or worktree you are in, so
 worktrees resolve to the same project as the primary checkout. A bare ` + "`ls`" + `
 outside a registered repo lists everything.
+
+The global list is for what no repo owns, and ` + "`-g`" + ` adds there and lists
+it. Ids are unique across the whole store, so desc, tag, and rm <id> reach
+a global item without it.
 
 A repo registered in terrier (https://github.com/sylophi/terrier) becomes a
 project here, so it does not have to be registered twice. Terrier is checked

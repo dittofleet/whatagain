@@ -99,3 +99,19 @@ func TestQuotedSuggestion(t *testing.T) {
 		t.Errorf("quotedSuggestion with a quote = %q, want empty", got)
 	}
 }
+
+func TestCheckScope(t *testing.T) {
+	a := &store.Project{ID: "a/b", Items: []store.Item{{ID: "1a", Text: "one"}}}
+	global := &store.Project{Items: []store.Item{{ID: "2b", Text: "two"}}}
+	hits := []hit{{a, 0}, {global, 0}}
+
+	if err := checkScope(hits[:1], a); err != nil {
+		t.Errorf("checkScope with every hit in scope errored: %v", err)
+	}
+	// An id living outside the named list stops the removal: -g or -p is
+	// a promise about where the items are, not a suggestion.
+	err := checkScope(hits, global)
+	if err == nil || !strings.Contains(err.Error(), "1a is in a/b, not the global list") {
+		t.Errorf("checkScope error = %v, want the out-of-scope id named", err)
+	}
+}

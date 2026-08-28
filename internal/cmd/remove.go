@@ -9,17 +9,22 @@ import (
 	"github.com/dittofleet/whatagain/internal/store"
 )
 
-const removeUsage = `usage: whatagain rm [-p <owner/repo>] <id>...
-       whatagain rm [-p <owner/repo>] "<text>"`
+const removeUsage = `usage: whatagain rm [-p <owner/repo> | -g] <id>...
+       whatagain rm [-p <owner/repo> | -g] "<text>"`
 
 // Remove deletes items addressed either by id or by their text. Ids can be
-// given several at a time. Text is one quoted argument, matched within a
-// single project.
+// given several at a time and work from anywhere, though a -p or -g given
+// with them is held to. Text is one quoted argument, matched within a
+// single list.
 func Remove(args []string) error {
 	var project string
-	rest, err := flags{values: projectFlag(&project)}.parse(args, removeUsage)
+	var global bool
+	rest, err := flags{bools: globalFlag(&global), values: projectFlag(&project)}.parse(args, removeUsage)
 	if err != nil {
 		return err
+	}
+	if global && project != "" {
+		return mutuallyExclusive("global", "project", removeUsage)
 	}
 	// A blank argument is almost always an unset variable, and matching it
 	// as text would substring-match every item in the project.
@@ -34,6 +39,18 @@ func Remove(args []string) error {
 		hits, unresolved := resolveIDs(s, rest)
 		switch {
 		case len(unresolved) == 0:
+			// An explicit -p or -g names where the ids are expected to
+			// live, and removal is permanent, so a hit elsewhere refuses
+			// rather than quietly widens the scope.
+			if global || project != "" {
+				scope, err := resolveList(s, project, global)
+				if err != nil {
+					return err
+				}
+				if err := checkScope(hits, scope); err != nil {
+					return err
+				}
+			}
 			removed = removeHits(hits)
 			return nil
 		case len(hits) > 0:
@@ -45,7 +62,7 @@ func Remove(args []string) error {
 			return fmt.Errorf("rm takes item ids, or one quoted note%s\n%s", quotedSuggestion("rm", rest), removeUsage)
 		}
 
-		p, err := resolveProject(s, project)
+		p, err := resolveList(s, project, global)
 		if err != nil {
 			return err
 		}
@@ -61,7 +78,7 @@ func Remove(args []string) error {
 	}
 
 	for _, r := range removed {
-		fmt.Printf("Removed %s from %s: %s\n", r.item.ID, r.project, r.item.Text)
+		fmt.Printf("Removed %s from %s: %s\n", r.item.ID, listName(r.project), r.item.Text)
 	}
 	return nil
 }
@@ -95,6 +112,17 @@ func resolveIDs(s *store.Store, args []string) (hits []hit, unresolved []string)
 	return hits, unresolved
 }
 
+// checkScope reports the first hit living outside the list the user
+// named, so no id is removed from somewhere they did not say.
+func checkScope(hits []hit, scope *store.Project) error {
+	for _, h := range hits {
+		if h.project != scope {
+			return fmt.Errorf("%s is in %s, not %s", h.project.Items[h.index].ID, listName(h.project.ID), listName(scope.ID))
+		}
+	}
+	return nil
+}
+
 // removeHits deletes located items, highest index first so each removal
 // leaves the rest valid.
 func removeHits(hits []hit) []removal {
@@ -113,7 +141,7 @@ func matchItem(p *store.Project, text string) (int, error) {
 	// Guarded because empty text is a substring of every item, which would
 	// make "the only match" mean "the first item".
 	if text == "" {
-		return 0, fmt.Errorf("no text to match against %s", p.ID)
+		return 0, fmt.Errorf("no text to match against %s", listName(p.ID))
 	}
 	needle := strings.ToLower(text)
 
@@ -136,10 +164,10 @@ func matchItem(p *store.Project, text string) (int, error) {
 	case 1:
 		return matches[0], nil
 	case 0:
-		return 0, fmt.Errorf("no item in %s matches %q", p.ID, text)
+		return 0, fmt.Errorf("no item in %s matches %q", listName(p.ID), text)
 	default:
 		var b strings.Builder
-		fmt.Fprintf(&b, "%q matches %d items in %s:\n", text, len(matches), p.ID)
+		fmt.Fprintf(&b, "%q matches %d items in %s:\n", text, len(matches), listName(p.ID))
 		for _, i := range matches {
 			fmt.Fprintf(&b, "  %s  %s\n", p.Items[i].ID, p.Items[i].Text)
 		}
