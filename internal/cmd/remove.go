@@ -9,12 +9,13 @@ import (
 	"github.com/dittofleet/whatagain/internal/store"
 )
 
-const removeUsage = `usage: whatagain rm [-p <owner/repo>] <id>...
+const removeUsage = `usage: whatagain rm [-p <owner/repo> | -g] <id>...
        whatagain rm [-p <owner/repo> | -g] "<text>"`
 
 // Remove deletes items addressed either by id or by their text. Ids can be
-// given several at a time. Text is one quoted argument, matched within a
-// single project.
+// given several at a time and work from anywhere, though a -p or -g given
+// with them is held to. Text is one quoted argument, matched within a
+// single list.
 func Remove(args []string) error {
 	var project string
 	var global bool
@@ -38,6 +39,18 @@ func Remove(args []string) error {
 		hits, unresolved := resolveIDs(s, rest)
 		switch {
 		case len(unresolved) == 0:
+			// An explicit -p or -g names where the ids are expected to
+			// live, and removal is permanent, so a hit elsewhere refuses
+			// rather than quietly widens the scope.
+			if global || project != "" {
+				scope, err := resolveList(s, project, global)
+				if err != nil {
+					return err
+				}
+				if err := checkScope(hits, scope); err != nil {
+					return err
+				}
+			}
 			removed = removeHits(hits)
 			return nil
 		case len(hits) > 0:
@@ -97,6 +110,17 @@ func resolveIDs(s *store.Store, args []string) (hits []hit, unresolved []string)
 		hits = append(hits, hit{p, i})
 	}
 	return hits, unresolved
+}
+
+// checkScope reports the first hit living outside the list the user
+// named, so no id is removed from somewhere they did not say.
+func checkScope(hits []hit, scope *store.Project) error {
+	for _, h := range hits {
+		if h.project != scope {
+			return fmt.Errorf("%s is in %s, not %s", h.project.Items[h.index].ID, listName(h.project.ID), listName(scope.ID))
+		}
+	}
+	return nil
 }
 
 // removeHits deletes located items, highest index first so each removal
