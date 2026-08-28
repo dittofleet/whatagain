@@ -27,7 +27,7 @@ func resolveProject(s *store.Store, override string) (*store.Project, error) {
 	id, err := repo.Current()
 	if err != nil {
 		if errors.Is(err, repo.ErrNoProject) {
-			return nil, fmt.Errorf("%w\nPick a project with `--project <owner/repo>`", err)
+			return nil, fmt.Errorf("%w\nPick a project with `--project <owner/repo>`, or the global list with `-g`", err)
 		}
 		return nil, err
 	}

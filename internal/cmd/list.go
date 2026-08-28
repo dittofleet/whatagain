@@ -3,23 +3,27 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 
 	"github.com/dittofleet/whatagain/internal/store"
 )
 
-const listUsage = "usage: whatagain ls [-p <owner/repo>] [-t <tag>...] [--all] [--json]"
+const listUsage = "usage: whatagain ls [-p <owner/repo> | -g] [-t <tag>...] [--all] [--json]"
 
 // List prints items. With no flags it shows the current repo's project,
-// falling back to every project when the working directory does not
-// belong to one, which is what makes a bare `whatagain ls` useful anywhere.
+// falling back to everything, the global list included, when the working
+// directory does not belong to one, which is what makes a bare
+// `whatagain ls` useful anywhere.
 func List(args []string) error {
 	var project string
 	var tagArgs []string
-	var all, asJSON bool
+	var all, global, asJSON bool
+	bools := map[string]*bool{"all": &all, "a": &all, "json": &asJSON}
+	maps.Copy(bools, globalFlag(&global))
 	f := flags{
-		bools:  map[string]*bool{"all": &all, "a": &all, "json": &asJSON},
+		bools:  bools,
 		values: projectFlag(&project),
 		lists:  tagFlag(&tagArgs),
 	}
@@ -37,16 +41,24 @@ func List(args []string) error {
 	if all && project != "" {
 		return fmt.Errorf("--all and --project are mutually exclusive\n%s", listUsage)
 	}
+	if global && project != "" {
+		return fmt.Errorf("--global and --project are mutually exclusive\n%s", listUsage)
+	}
+	if global && all {
+		return fmt.Errorf("--global and --all are mutually exclusive\n%s", listUsage)
+	}
 
 	s, err := openStore()
 	if err != nil {
 		return err
 	}
 
-	// Showing everything is the fallback, so only the two arms that narrow
-	// to a single project have to say anything.
-	shown, scoped := s.Projects, false
+	// Showing everything is the fallback, so only the arms that narrow to
+	// a single list have to say anything.
+	shown, scoped := s.Lists(), false
 	switch {
+	case global:
+		shown, scoped = []*store.Project{s.Global()}, true
 	case project != "":
 		p, err := resolveProject(s, project)
 		if err != nil {
@@ -61,9 +73,20 @@ func List(args []string) error {
 
 	shown = filterByTags(shown, tags)
 	if asJSON {
+		// The global list keeps its shape in the output too: items at the
+		// top level, not a project with a blank id.
+		items, projects := []store.Item{}, []*store.Project{}
+		for _, p := range shown {
+			if p.ID == "" {
+				items = append(items, p.Items...)
+			} else {
+				projects = append(projects, p)
+			}
+		}
 		return writeJSON(struct {
 			Projects []*store.Project `json:"projects"`
-		}{emptyToSlice(shown)})
+			Items    []store.Item     `json:"items"`
+		}{projects, items})
 	}
 	printItems(shown, scoped, tags)
 	return nil
@@ -104,18 +127,20 @@ func hasEveryTag(it store.Item, tags []string) bool {
 }
 
 // printItems renders the listing. scoped means projects holds the single
-// project that was asked for, which is the only case where an empty
-// project is worth naming. tags are the ones filtered on, so nothing left
+// list that was asked for, which is the only case where an empty one is
+// worth naming. tags are the ones filtered on, so nothing left
 // reads as a filter that matched rather than an empty list.
 func printItems(projects []*store.Project, scoped bool, tags []string) {
 	if itemCount(projects) == 0 {
 		where := ""
 		if scoped {
-			where = " in " + projects[0].ID
+			where = " in " + listName(projects[0].ID)
 		}
 		switch {
 		case len(tags) > 0:
 			fmt.Printf("No items tagged %s%s.\n", formatTags(tags), where)
+		case scoped && projects[0].ID == "":
+			fmt.Println("The global list has no items.")
 		case scoped:
 			fmt.Printf("%s has no items.\n", projects[0].ID)
 		default:
@@ -133,7 +158,7 @@ func printItems(projects []*store.Project, scoped bool, tags []string) {
 			fmt.Println()
 		}
 		first = false
-		fmt.Println(p.ID)
+		fmt.Println(listHeader(p.ID))
 		for _, it := range p.Items {
 			// Tags ride on the note's own line, so an item still reads as
 			// one line unless it has detail hanging under it.
@@ -159,12 +184,23 @@ func printDescription(width int, description string) {
 	}
 }
 
-// emptyToSlice keeps JSON output as [] rather than null when nothing matches.
-func emptyToSlice(p []*store.Project) []*store.Project {
-	if p == nil {
-		return []*store.Project{}
+// listHeader is the line a listing opens a list with. The global list
+// gets a name no project id can be mistaken for, since every one of
+// those has a slash in it.
+func listHeader(id string) string {
+	if id == "" {
+		return "(no project)"
 	}
-	return p
+	return id
+}
+
+// listName is what prose calls the list an item lives in: the project
+// id, or "the global list" for the one that has none.
+func listName(id string) string {
+	if id == "" {
+		return "the global list"
+	}
+	return id
 }
 
 func itemCount(projects []*store.Project) int {

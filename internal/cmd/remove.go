@@ -10,16 +10,20 @@ import (
 )
 
 const removeUsage = `usage: whatagain rm [-p <owner/repo>] <id>...
-       whatagain rm [-p <owner/repo>] "<text>"`
+       whatagain rm [-p <owner/repo> | -g] "<text>"`
 
 // Remove deletes items addressed either by id or by their text. Ids can be
 // given several at a time. Text is one quoted argument, matched within a
 // single project.
 func Remove(args []string) error {
 	var project string
-	rest, err := flags{values: projectFlag(&project)}.parse(args, removeUsage)
+	var global bool
+	rest, err := flags{bools: globalFlag(&global), values: projectFlag(&project)}.parse(args, removeUsage)
 	if err != nil {
 		return err
+	}
+	if global && project != "" {
+		return fmt.Errorf("--global and --project are mutually exclusive\n%s", removeUsage)
 	}
 	// A blank argument is almost always an unset variable, and matching it
 	// as text would substring-match every item in the project.
@@ -45,9 +49,14 @@ func Remove(args []string) error {
 			return fmt.Errorf("rm takes item ids, or one quoted note%s\n%s", quotedSuggestion("rm", rest), removeUsage)
 		}
 
-		p, err := resolveProject(s, project)
-		if err != nil {
-			return err
+		var p *store.Project
+		if global {
+			p = s.Global()
+		} else {
+			var err error
+			if p, err = resolveProject(s, project); err != nil {
+				return err
+			}
 		}
 		i, err := matchItem(p, normalizeNote(rest[0]))
 		if err != nil {
@@ -61,7 +70,7 @@ func Remove(args []string) error {
 	}
 
 	for _, r := range removed {
-		fmt.Printf("Removed %s from %s: %s\n", r.item.ID, r.project, r.item.Text)
+		fmt.Printf("Removed %s from %s: %s\n", r.item.ID, listName(r.project), r.item.Text)
 	}
 	return nil
 }
@@ -113,7 +122,7 @@ func matchItem(p *store.Project, text string) (int, error) {
 	// Guarded because empty text is a substring of every item, which would
 	// make "the only match" mean "the first item".
 	if text == "" {
-		return 0, fmt.Errorf("no text to match against %s", p.ID)
+		return 0, fmt.Errorf("no text to match against %s", listName(p.ID))
 	}
 	needle := strings.ToLower(text)
 
@@ -136,10 +145,10 @@ func matchItem(p *store.Project, text string) (int, error) {
 	case 1:
 		return matches[0], nil
 	case 0:
-		return 0, fmt.Errorf("no item in %s matches %q", p.ID, text)
+		return 0, fmt.Errorf("no item in %s matches %q", listName(p.ID), text)
 	default:
 		var b strings.Builder
-		fmt.Fprintf(&b, "%q matches %d items in %s:\n", text, len(matches), p.ID)
+		fmt.Fprintf(&b, "%q matches %d items in %s:\n", text, len(matches), listName(p.ID))
 		for _, i := range matches {
 			fmt.Fprintf(&b, "  %s  %s\n", p.Items[i].ID, p.Items[i].Text)
 		}

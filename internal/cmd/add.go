@@ -7,7 +7,7 @@ import (
 	"github.com/dittofleet/whatagain/internal/store"
 )
 
-const addUsage = `usage: whatagain add [-p <owner/repo>] [-d "<description>"] [-t <tag>...] "<text>"`
+const addUsage = `usage: whatagain add [-p <owner/repo> | -g] [-d "<description>"] [-t <tag>...] "<text>"`
 
 // Add stores one item. The note is a single argument, so the shell hands
 // it over intact: unquoted text loses apostrophes, globs, and anything
@@ -16,11 +16,15 @@ const addUsage = `usage: whatagain add [-p <owner/repo>] [-d "<description>"] [-
 func Add(args []string) error {
 	var project, description string
 	var tagArgs []string
+	var global bool
 	values := projectFlag(&project)
 	maps.Copy(values, descriptionFlag(&description))
-	rest, err := flags{values: values, lists: tagFlag(&tagArgs)}.parse(args, addUsage)
+	rest, err := flags{bools: globalFlag(&global), values: values, lists: tagFlag(&tagArgs)}.parse(args, addUsage)
 	if err != nil {
 		return err
+	}
+	if global && project != "" {
+		return fmt.Errorf("--global and --project are mutually exclusive\n%s", addUsage)
 	}
 	tags, err := parseTags(tagArgs)
 	if err != nil {
@@ -41,16 +45,21 @@ func Add(args []string) error {
 	var item store.Item
 	var target string
 	if err := updateStore(func(s *store.Store) error {
-		p, err := resolveProject(s, project)
-		if err != nil {
-			return err
+		var p *store.Project
+		if global {
+			p = s.Global()
+		} else {
+			var err error
+			if p, err = resolveProject(s, project); err != nil {
+				return err
+			}
 		}
 		item = s.AddItem(p, store.Item{
 			Text:        text,
 			Description: normalizeDescription(description),
 			Tags:        tags,
 		})
-		target = p.ID
+		target = listName(p.ID)
 		return nil
 	}); err != nil {
 		return err

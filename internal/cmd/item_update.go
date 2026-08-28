@@ -8,7 +8,7 @@ import (
 
 // updateItem is the frame every command that addresses an item by id
 // shares: open the store, find the item, hand it to change, and report the
-// project it turned out to live in. Ids are unique store-wide, so none of
+// list it turned out to live in. Ids are unique store-wide, so none of
 // those commands needs a project to work from.
 func updateItem(id string, change func(p *store.Project, i int) (store.Item, error)) (store.Item, string, error) {
 	var item store.Item
@@ -22,7 +22,7 @@ func updateItem(id string, change func(p *store.Project, i int) (store.Item, err
 		if err != nil {
 			return err
 		}
-		item, target = updated, p.ID
+		item, target = updated, listName(p.ID)
 		return nil
 	})
 	return item, target, err

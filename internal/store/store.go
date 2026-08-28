@@ -27,7 +27,7 @@ import (
 // stamped with the current version on the next save. A newer file is
 // refused: dropping fields this build does not know about would quietly
 // delete them from a store synced between machines.
-const SchemaVersion = 3
+const SchemaVersion = 4
 
 type Item struct {
 	ID   string `json:"id"`
@@ -63,8 +63,62 @@ type Project struct {
 }
 
 type Store struct {
+	SchemaVersion int
+	Projects      []*Project
+	// global is the project-less list, for the notes that are about no
+	// repo. In memory it is a Project like any other, so everything that
+	// works on items works on it. In the file it is a top-level "items"
+	// array instead of a project entry: a project is a GitHub repo, and
+	// this list has none.
+	global *Project
+}
+
+// storeFile is the JSON layout of the store. The two marshaling methods
+// below translate through it, so the global list can be a bare "items"
+// array in the file while being a *Project everywhere else.
+type storeFile struct {
 	SchemaVersion int        `json:"schemaVersion"`
+	Items         []Item     `json:"items,omitempty"`
 	Projects      []*Project `json:"projects"`
+}
+
+func (s *Store) MarshalJSON() ([]byte, error) {
+	f := storeFile{SchemaVersion: s.SchemaVersion, Projects: s.Projects}
+	if s.global != nil {
+		f.Items = s.global.Items
+	}
+	return json.Marshal(f)
+}
+
+func (s *Store) UnmarshalJSON(data []byte) error {
+	var f storeFile
+	if err := json.Unmarshal(data, &f); err != nil {
+		return err
+	}
+	*s = Store{SchemaVersion: f.SchemaVersion, Projects: f.Projects}
+	if len(f.Items) > 0 {
+		s.global = &Project{Items: f.Items}
+	}
+	return nil
+}
+
+// Global returns the project-less list, creating it if the store holds
+// none yet. Its ID is empty, which no project's can be, so nothing ever
+// mistakes one for the other.
+func (s *Store) Global() *Project {
+	if s.global == nil {
+		s.global = &Project{}
+	}
+	return s.global
+}
+
+// Lists returns every list an item can live in: the global one first,
+// when the store holds one, then the projects.
+func (s *Store) Lists() []*Project {
+	if s.global == nil {
+		return s.Projects
+	}
+	return append([]*Project{s.global}, s.Projects...)
 }
 
 // Path returns the location of the store file.
@@ -194,11 +248,11 @@ func (s *Store) RemoveProject(id string) (*Project, error) {
 	return p, nil
 }
 
-// FindItemByID looks an item up across every project, since ids are unique
-// store-wide. This is what lets `rm <id>` work from any directory.
+// FindItemByID looks an item up across every list, the global one
+// included, since ids are unique store-wide. This is what lets `rm <id>` work from any directory.
 func (s *Store) FindItemByID(id string) (*Project, int) {
 	id = strings.TrimSpace(id)
-	for _, p := range s.Projects {
+	for _, p := range s.Lists() {
 		for i, it := range p.Items {
 			if strings.EqualFold(it.ID, id) {
 				return p, i

@@ -15,8 +15,8 @@ type flags struct {
 	lists  map[string]*[]string
 }
 
-// projectFlag and yesFlag build the two flag sets shared across commands,
-// so an alias is spelled once rather than at every call site.
+// projectFlag and the helpers after it build the flag sets shared across
+// commands, so an alias is spelled once rather than at every call site.
 func projectFlag(target *string) map[string]*string {
 	return map[string]*string{"p": target, "project": target}
 }
@@ -30,6 +30,12 @@ func descriptionFlag(target *string) map[string]*string {
 // is parseTags's job, since the same text arrives as positionals too.
 func tagFlag(target *[]string) map[string]*[]string {
 	return map[string]*[]string{"t": target, "tag": target, "tags": target}
+}
+
+// globalFlag aims a command at the global list, the one belonging to no
+// project, instead of resolving a repo.
+func globalFlag(target *bool) map[string]*bool {
+	return map[string]*bool{"g": target, "global": target}
 }
 
 func yesFlag(target *bool) map[string]*bool {
