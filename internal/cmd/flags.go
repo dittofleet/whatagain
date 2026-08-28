@@ -108,3 +108,9 @@ func (f flags) parse(args []string, usage string) ([]string, error) {
 	}
 	return positional, nil
 }
+
+// mutuallyExclusive is the refusal for two flags given together when each
+// picks the list to act on, so the command does not guess between them.
+func mutuallyExclusive(a, b, usage string) error {
+	return fmt.Errorf("--%s and --%s are mutually exclusive\n%s", a, b, usage)
+}

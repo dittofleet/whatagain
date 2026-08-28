@@ -24,7 +24,7 @@ func Add(args []string) error {
 		return err
 	}
 	if global && project != "" {
-		return fmt.Errorf("--global and --project are mutually exclusive\n%s", addUsage)
+		return mutuallyExclusive("global", "project", addUsage)
 	}
 	tags, err := parseTags(tagArgs)
 	if err != nil {
@@ -45,14 +45,9 @@ func Add(args []string) error {
 	var item store.Item
 	var target string
 	if err := updateStore(func(s *store.Store) error {
-		var p *store.Project
-		if global {
-			p = s.Global()
-		} else {
-			var err error
-			if p, err = resolveProject(s, project); err != nil {
-				return err
-			}
+		p, err := resolveList(s, project, global)
+		if err != nil {
+			return err
 		}
 		item = s.AddItem(p, store.Item{
 			Text:        text,

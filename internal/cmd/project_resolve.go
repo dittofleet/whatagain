@@ -38,6 +38,15 @@ func resolveProject(s *store.Store, override string) (*store.Project, error) {
 	return p, nil
 }
 
+// resolveList picks the list a command acts on: the global one when -g
+// was given, otherwise the project resolveProject settles on.
+func resolveList(s *store.Store, project string, global bool) (*store.Project, error) {
+	if global {
+		return s.Global(), nil
+	}
+	return resolveProject(s, project)
+}
+
 // currentProject returns the registered project for the working directory,
 // or nil when there is none. Used where an unknown project is a fallback
 // rather than an error.

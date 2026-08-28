@@ -23,7 +23,7 @@ func Remove(args []string) error {
 		return err
 	}
 	if global && project != "" {
-		return fmt.Errorf("--global and --project are mutually exclusive\n%s", removeUsage)
+		return mutuallyExclusive("global", "project", removeUsage)
 	}
 	// A blank argument is almost always an unset variable, and matching it
 	// as text would substring-match every item in the project.
@@ -49,14 +49,9 @@ func Remove(args []string) error {
 			return fmt.Errorf("rm takes item ids, or one quoted note%s\n%s", quotedSuggestion("rm", rest), removeUsage)
 		}
 
-		var p *store.Project
-		if global {
-			p = s.Global()
-		} else {
-			var err error
-			if p, err = resolveProject(s, project); err != nil {
-				return err
-			}
+		p, err := resolveList(s, project, global)
+		if err != nil {
+			return err
 		}
 		i, err := matchItem(p, normalizeNote(rest[0]))
 		if err != nil {

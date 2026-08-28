@@ -174,7 +174,10 @@ func TestLoadWithoutGlobalList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if lists := s.Lists(); len(lists) != 1 || lists[0].ID != "a/b" {
-		t.Errorf("Lists() = %v, want just the project", lists)
+	if items := s.Global().Items; len(items) != 0 {
+		t.Errorf("global items = %v, want none", items)
+	}
+	if len(s.Projects) != 1 || s.Projects[0].ID != "a/b" || len(s.Projects[0].Items) != 1 {
+		t.Errorf("projects = %v, want a/b with its one item", s.Projects)
 	}
 }

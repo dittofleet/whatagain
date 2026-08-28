@@ -39,13 +39,13 @@ func List(args []string) error {
 		return fmt.Errorf("unexpected arguments: %v\n%s", rest, listUsage)
 	}
 	if all && project != "" {
-		return fmt.Errorf("--all and --project are mutually exclusive\n%s", listUsage)
+		return mutuallyExclusive("all", "project", listUsage)
 	}
 	if global && project != "" {
-		return fmt.Errorf("--global and --project are mutually exclusive\n%s", listUsage)
+		return mutuallyExclusive("global", "project", listUsage)
 	}
 	if global && all {
-		return fmt.Errorf("--global and --all are mutually exclusive\n%s", listUsage)
+		return mutuallyExclusive("global", "all", listUsage)
 	}
 
 	s, err := openStore()
@@ -57,10 +57,8 @@ func List(args []string) error {
 	// a single list have to say anything.
 	shown, scoped := s.Lists(), false
 	switch {
-	case global:
-		shown, scoped = []*store.Project{s.Global()}, true
-	case project != "":
-		p, err := resolveProject(s, project)
+	case global || project != "":
+		p, err := resolveList(s, project, global)
 		if err != nil {
 			return err
 		}
@@ -136,15 +134,10 @@ func printItems(projects []*store.Project, scoped bool, tags []string) {
 		if scoped {
 			where = " in " + listName(projects[0].ID)
 		}
-		switch {
-		case len(tags) > 0:
+		if len(tags) > 0 {
 			fmt.Printf("No items tagged %s%s.\n", formatTags(tags), where)
-		case scoped && projects[0].ID == "":
-			fmt.Println("The global list has no items.")
-		case scoped:
-			fmt.Printf("%s has no items.\n", projects[0].ID)
-		default:
-			fmt.Println("No items.")
+		} else {
+			fmt.Printf("No items%s.\n", where)
 		}
 		return
 	}
@@ -158,7 +151,13 @@ func printItems(projects []*store.Project, scoped bool, tags []string) {
 			fmt.Println()
 		}
 		first = false
-		fmt.Println(listHeader(p.ID))
+		// The global list opens under a name no project id can read as,
+		// since every project has a slash in it.
+		if p.ID == "" {
+			fmt.Println("(no project)")
+		} else {
+			fmt.Println(p.ID)
+		}
 		for _, it := range p.Items {
 			// Tags ride on the note's own line, so an item still reads as
 			// one line unless it has detail hanging under it.
@@ -182,16 +181,6 @@ func printDescription(width int, description string) {
 	for _, line := range strings.Split(description, "\n") {
 		fmt.Println(indent + line)
 	}
-}
-
-// listHeader is the line a listing opens a list with. The global list
-// gets a name no project id can be mistaken for, since every one of
-// those has a slash in it.
-func listHeader(id string) string {
-	if id == "" {
-		return "(no project)"
-	}
-	return id
 }
 
 // listName is what prose calls the list an item lives in: the project

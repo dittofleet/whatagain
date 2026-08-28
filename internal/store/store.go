@@ -67,10 +67,11 @@ type Store struct {
 	Projects      []*Project
 	// global is the project-less list, for the notes that are about no
 	// repo. In memory it is a Project like any other, so everything that
-	// works on items works on it. In the file it is a top-level "items"
-	// array instead of a project entry: a project is a GitHub repo, and
-	// this list has none.
-	global *Project
+	// works on items works on it, and its zero value is the empty list,
+	// so there is nothing to create or nil-check. In the file it is a
+	// top-level "items" array instead of a project entry: a project is a
+	// GitHub repo, and this list has none.
+	global Project
 }
 
 // storeFile is the JSON layout of the store. The two marshaling methods
@@ -83,11 +84,11 @@ type storeFile struct {
 }
 
 func (s *Store) MarshalJSON() ([]byte, error) {
-	f := storeFile{SchemaVersion: s.SchemaVersion, Projects: s.Projects}
-	if s.global != nil {
-		f.Items = s.global.Items
-	}
-	return json.Marshal(f)
+	return json.Marshal(storeFile{
+		SchemaVersion: s.SchemaVersion,
+		Items:         s.global.Items,
+		Projects:      s.Projects,
+	})
 }
 
 func (s *Store) UnmarshalJSON(data []byte) error {
@@ -95,30 +96,20 @@ func (s *Store) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &f); err != nil {
 		return err
 	}
-	*s = Store{SchemaVersion: f.SchemaVersion, Projects: f.Projects}
-	if len(f.Items) > 0 {
-		s.global = &Project{Items: f.Items}
-	}
+	*s = Store{SchemaVersion: f.SchemaVersion, Projects: f.Projects, global: Project{Items: f.Items}}
 	return nil
 }
 
-// Global returns the project-less list, creating it if the store holds
-// none yet. Its ID is empty, which no project's can be, so nothing ever
-// mistakes one for the other.
+// Global returns the project-less list. Its ID is empty, which no
+// project's can be, so nothing ever mistakes one for the other.
 func (s *Store) Global() *Project {
-	if s.global == nil {
-		s.global = &Project{}
-	}
-	return s.global
+	return &s.global
 }
 
 // Lists returns every list an item can live in: the global one first,
-// when the store holds one, then the projects.
+// then the projects.
 func (s *Store) Lists() []*Project {
-	if s.global == nil {
-		return s.Projects
-	}
-	return append([]*Project{s.global}, s.Projects...)
+	return append([]*Project{&s.global}, s.Projects...)
 }
 
 // Path returns the location of the store file.
