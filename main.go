@@ -53,9 +53,9 @@ from the ` + "`origin`" + ` remote of the git repository or worktree you are in,
 worktrees resolve to the same project as the primary checkout. A bare ` + "`ls`" + `
 outside a registered repo lists everything.
 
-The global list is for what no repo owns. ` + "`-g`" + ` adds there and lists it;
-ids are unique across the whole store, so desc, tag, and rm <id> reach a
-global item without it.
+The global list is for what no repo owns, and ` + "`-g`" + ` adds there and lists
+it. Ids are unique across the whole store, so desc, tag, and rm <id> reach
+a global item without it.
 
 A repo registered in terrier (https://github.com/sylophi/terrier) becomes a
 project here, so it does not have to be registered twice. Terrier is checked
