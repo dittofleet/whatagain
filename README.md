@@ -1,3 +1,5 @@
+<img src="assets/icon.svg" width="80" alt="whatagain icon">
+
 # whatagain
 
 A todo list for coding agents, scoped to repos.
