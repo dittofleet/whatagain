@@ -66,7 +66,7 @@ Run `whatagain help` for the rest of the commands.
 
 ## Projects, registered once
 
-A repo registered in [terrier](https://github.com/sylophi/terrier) becomes a project here, so there is no second registration to remember:
+A repo registered in [terrier](https://github.com/dittofleet/terrier) becomes a project here, so there is no second registration to remember:
 
 ```sh
 $ cd ~/src/lichen

@@ -1,5 +1,5 @@
 // Package terrier reads the repo registry kept by terrier
-// (https://github.com/sylophi/terrier), so a repo registered there is a
+// (https://github.com/dittofleet/terrier), so a repo registered there is a
 // project here without being registered a second time.
 //
 // Terrier's CLI is its contract: the registry file is private and its

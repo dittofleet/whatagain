@@ -57,7 +57,7 @@ The global list is for what no repo owns, and ` + "`-g`" + ` adds there and list
 it. Ids are unique across the whole store, so desc, tag, and rm <id> reach
 a global item without it.
 
-A repo registered in terrier (https://github.com/sylophi/terrier) becomes a
+A repo registered in terrier (https://github.com/dittofleet/terrier) becomes a
 project here, so it does not have to be registered twice. Terrier is checked
 whenever the list is read or written and what it holds is taken into the store,
 which is the part that syncs, so the projects are the same on every machine.
