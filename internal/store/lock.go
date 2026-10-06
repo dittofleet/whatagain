@@ -8,7 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dittofleet/whatagain/internal/xdg"
+	"github.com/dittofleet/go-cli-kit/xdg"
+	"github.com/dittofleet/whatagain/internal/app"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 // saving replaces the store through a rename and would strand a lock
 // held on the old inode.
 func lockPath() string {
-	return filepath.Join(xdg.ConfigDir(xdg.App), ".todo.lock")
+	return filepath.Join(xdg.ConfigDir(app.Name), ".todo.lock")
 }
 
 // acquire takes an exclusive advisory lock, waiting a short while for

@@ -19,7 +19,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/dittofleet/whatagain/internal/xdg"
+	"github.com/dittofleet/go-cli-kit/xdg"
+	"github.com/dittofleet/whatagain/internal/app"
 )
 
 // SchemaVersion is what this build writes. Older files load as they are,
@@ -114,7 +115,7 @@ func (s *Store) Lists() []*Project {
 
 // Path returns the location of the store file.
 func Path() string {
-	return filepath.Join(xdg.ConfigDir(xdg.App), "todo.json")
+	return filepath.Join(xdg.ConfigDir(app.Name), "todo.json")
 }
 
 // Load reads the store file. A missing file is not an error: it yields an
