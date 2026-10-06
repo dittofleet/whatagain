@@ -8,8 +8,9 @@ import (
 	"os"
 	"strings"
 
+	clikit "github.com/dittofleet/go-cli-kit"
+	"github.com/dittofleet/go-cli-kit/xdg"
 	"github.com/dittofleet/whatagain/internal/store"
-	"github.com/dittofleet/whatagain/internal/xdg"
 	"golang.org/x/term"
 )
 
@@ -18,7 +19,7 @@ const uninstallUsage = "usage: whatagain uninstall [--yes]"
 // Uninstall removes the whatagain binary, config directory, and data
 // directory. Order is data → config → binary so a failure leaves a tool
 // to retry with.
-func Uninstall(args []string, version string) error {
+func Uninstall(args []string, a clikit.App) error {
 	var yes bool
 	args, err := flags{bools: yesFlag(&yes)}.parse(args, uninstallUsage)
 	if err != nil {
@@ -28,17 +29,17 @@ func Uninstall(args []string, version string) error {
 		return fmt.Errorf("unexpected arguments: %v\n%s", args, uninstallUsage)
 	}
 
-	if version == "dev" {
+	if a.IsDev() {
 		return errors.New("cannot uninstall a dev build")
 	}
 
-	binaryPath, err := resolveExecutable()
+	binaryPath, err := clikit.Executable()
 	if err != nil {
 		return fmt.Errorf("cannot determine binary path: %w", err)
 	}
 
-	configDir := xdg.ConfigDir(xdg.App)
-	dataDir := xdg.DataDir(xdg.App)
+	configDir := xdg.ConfigDir(a.Name)
+	dataDir := xdg.DataDir(a.Name)
 
 	fmt.Println("This will remove:")
 	fmt.Printf("  - Binary:  %s\n", binaryPath)

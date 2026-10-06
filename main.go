@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"slices"
 
+	clikit "github.com/dittofleet/go-cli-kit"
+	"github.com/dittofleet/go-cli-kit/selfupdate"
+	"github.com/dittofleet/go-cli-kit/updatecheck"
+	"github.com/dittofleet/whatagain/internal/app"
 	"github.com/dittofleet/whatagain/internal/cmd"
-	"github.com/dittofleet/whatagain/internal/update"
 )
 
 var errUnknownCommand = errors.New("unknown command")
@@ -76,7 +78,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	if err := dispatch(args); err != nil {
+	whatagain := app.New(version)
+	if err := dispatch(whatagain, args); err != nil {
 		if errors.Is(err, errUnknownCommand) {
 			// Naming it catches the common slip of putting a flag before
 			// the command, where a bare usage dump explains nothing.
@@ -88,14 +91,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// `update` has just talked to the release API, and `uninstall` has
-	// deleted the cache directory this would recreate.
-	if !slices.Contains([]string{"update", "uninstall"}, args[0]) {
-		update.MaybeCheck(version)
-	}
+	updatecheck.MaybeCheck(whatagain, args[0])
 }
 
-func dispatch(args []string) error {
+func dispatch(whatagain clikit.App, args []string) error {
 	switch args[0] {
 	case "add":
 		return cmd.Add(args[1:])
@@ -112,9 +111,10 @@ func dispatch(args []string) error {
 	case "projects", "project":
 		return cmd.Projects(args[1:])
 	case "update":
-		return cmd.SelfUpdate(version)
+		_, err := selfupdate.Run(whatagain)
+		return err
 	case "uninstall":
-		return cmd.Uninstall(args[1:], version)
+		return cmd.Uninstall(args[1:], whatagain)
 	case "version", "--version", "-v":
 		fmt.Println(version)
 		return nil
