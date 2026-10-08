@@ -6,6 +6,7 @@ import (
 	"os"
 
 	clikit "github.com/dittofleet/go-cli-kit"
+	"github.com/dittofleet/go-cli-kit/postinstall"
 	"github.com/dittofleet/go-cli-kit/selfupdate"
 	"github.com/dittofleet/go-cli-kit/updatecheck"
 	"github.com/dittofleet/whatagain/internal/app"
@@ -115,6 +116,9 @@ func dispatch(whatagain clikit.App, args []string) error {
 		return err
 	case "uninstall":
 		return cmd.Uninstall(args[1:], whatagain)
+	case "postinstall":
+		// Nothing to set up: the store is created on the first write.
+		return postinstall.Run(whatagain, func() error { return nil })
 	case "version", "--version", "-v":
 		fmt.Println(version)
 		return nil
