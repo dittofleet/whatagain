@@ -86,7 +86,7 @@ Terrier is optional. Without it, the projects are the ones added here and nothin
 ## Install
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/dittofleet/whatagain/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/dittofleet/.github/main/install.sh | sh -s whatagain
 ```
 
 Installs the latest release to `~/.local/bin/whatagain` (override with `WHATAGAIN_INSTALL_DIR`). Supported platforms: macOS (arm64, x64), Linux (arm64, x64).
