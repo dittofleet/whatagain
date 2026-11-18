@@ -5,9 +5,9 @@
 // Terrier's CLI is its contract: the registry file is private and its
 // layout can change, so everything comes from `terrier ls --json`.
 //
-// Nothing here is required. A machine without terrier, or with one too
-// new to be understood, is a machine where whatagain's projects are the
-// ones in its own store and nothing else.
+// Nothing here is required. A machine without terrier, or with one that
+// fails, is a machine where whatagain's projects are the ones in its own
+// store and nothing else.
 package terrier
 
 import (
@@ -59,37 +59,15 @@ func load() []string {
 		// whatagain's own store is the whole list, exactly as before.
 		return nil
 	}
-	// The version gate and the registry do not depend on each other, and
-	// each is a process launch, which is nearly all of what asking terrier
-	// anything costs. Both are started at once and the gate still decides
-	// afterwards whether the answer may be used: a terrier too new to
-	// understand is the rare case, and all it wastes there is a listing
-	// nobody reads.
-	type listing struct {
-		out []byte
-		err error
-	}
-	listed := make(chan listing, 1)
-	go func() {
-		out, err := run("ls", "--json")
-		listed <- listing{out, err}
-	}()
-
-	versionErr := checkVersion()
-	got := <-listed
-
-	switch {
-	case versionErr != nil:
-		warn(versionErr)
-		return nil
-	case got.err != nil:
-		warn(got.err)
+	out, err := run("ls", "--json")
+	if err != nil {
+		warn(err)
 		return nil
 	}
 	var registry struct {
 		Projects []project `json:"projects"`
 	}
-	if err := json.Unmarshal(got.out, &registry); err != nil {
+	if err := json.Unmarshal(out, &registry); err != nil {
 		warn(fmt.Errorf("could not read the terrier registry: %w", err))
 		return nil
 	}
